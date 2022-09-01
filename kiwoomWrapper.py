@@ -1,6 +1,6 @@
 from PyQt5.QtCore import *
 from PyQt5 import QAxContainer
-
+from singleton import Singleton
 
 class KiwoomWrapper(QAxContainer.QAxWidget):
 

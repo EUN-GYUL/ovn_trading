@@ -7,6 +7,7 @@ from setting import *
 from task import *
 import pandas as pd
 import realdata
+from singleton import Singleton
 
 # TODO : 
 # 조건 검색식 편입 이탈 종목 관리
@@ -26,7 +27,7 @@ class Kiwoom(KiwoomWrapper):
         self.trdata = []
         
         #계좌번호리스트
-        self.account_no_list = []
+        self.account_list = []
         self.conditions = {}
         
         self.trmanager = TRReqManager()
@@ -46,6 +47,8 @@ class Kiwoom(KiwoomWrapper):
         
         self.tr_data = None
 
+        
+
     
     def _OnEventConnect(self, nErrCode: int):
         '''
@@ -55,7 +58,10 @@ class Kiwoom(KiwoomWrapper):
         if nErrCode == 0:
             print(f'[OnEventConnect] Login OK')
             
-            self.account_no_list = self.GetLoginInfo('ACCNO').split(";")
+            self.account_list = self.GetLoginInfo('ACCNO').split(";")
+            self.account_data = dict.fromkeys(self.account_list)
+
+
             self.setCodeList('ALL')
             
             for code in self.codes:
@@ -304,14 +310,10 @@ class Kiwoom(KiwoomWrapper):
     
     def reply_account_info(self,sScreenNo: str, sRqName: str, sTrCode: str, sRecordName: str, sPrevNext: str): 
         
-        self.예수금 = self.GetCommData(sTrCode,sRqName,0,"예수금")
-        self.주문가능금액 = self.GetCommData(sTrCode,sRqName,0,"주문가능금액")
-        self.종목_20 = self.GetCommData(sTrCode,sRqName,0,"20%종목주문가능금액")
-        self.종목_30 = self.GetCommData(sTrCode,sRqName,0,"30%종목주문가능금액")
-        self.종목_40 = self.GetCommData(sTrCode,sRqName,0,"40%종목주문가능금액")
-        self.종목_100 = self.GetCommData(sTrCode,sRqName,0,"100%종목주문가능금액")
-        
-        
+        data = []
+        for col in ACCOUNT_COL:
+            data.append(self.GetCommData(sTrCode,sRqName,0,col))
+                
 
     def get_cond_code_list(self,cond_name):
         return self.conditions[cond_name].get_cond_list()
@@ -322,13 +324,12 @@ class Kiwoom(KiwoomWrapper):
 from multiprocessing import Queue
 from ovntable import *
             
-class Kiwoom_Wrapper():
+class Kiwoom_Wrapper(metaclass = Singleton):
     
     
-    def __init__(self) -> None:
+    def __init__(self,ovn_q,ovn_del_q) -> None:
         
-        ovn_del_q = Queue()
-        ovn_q = Queue()
+
         
         self.kiwoom = Kiwoom(ovn_q,ovn_del_q)
         
@@ -368,6 +369,11 @@ class Kiwoom_Wrapper():
         self.kiwoom.request_ohlc_day(day,code)
         self.kiwoom.eventloop.exec()
         return self.kiwoom.get_ohlc()
+    
+    def get_account_info(self,account):
+        self.kiwoom.request_account_info(account)
+        self.kiwoom.eventloop.exec()
+        return self.kiwoom.account_data[account]
         
         
         
