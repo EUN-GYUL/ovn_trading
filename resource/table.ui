@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>922</width>
+    <height>546</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTableWidget" name="tableWidget">
+     <column>
+      <property name="text">
+       <string>새 행</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>종목명</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>일자</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>현재가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>거래량</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>거래대금</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>새 행</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>고가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>3일이격도</string>
+      </property>
+     </column>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

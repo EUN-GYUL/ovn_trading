@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1274</width>
+    <height>860</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTableWidget" name="ovntable">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="columnCount">
+      <number>14</number>
+     </property>
+     <column>
+      <property name="text">
+       <string>종목코드</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>종목명</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>현재가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>최우선매도가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>최우선매수가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>거래량</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>누적거래량</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>누적거래대금</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>시가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>고가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>저가</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>체결강도</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>시가총액</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>이격도(3)</string>
+      </property>
+     </column>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
