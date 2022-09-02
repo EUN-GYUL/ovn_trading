@@ -8,12 +8,12 @@ from multiprocessing import Queue
 
 class OvntableWidget(QWidget):
     
-    def __init__(self,data_q,del_q,codes , parent = None ) -> None:
+    def __init__(self,data_q,del_q,order_q,codes , parent = None ) -> None:
         super().__init__(parent)
         uic.loadUi("ovn_table.ui", self)
         
         toWorker_q = Queue()
-        self.ovn_proc = mp.Process(target=Ovn_Producer,args = (data_q,del_q,toWorker_q,codes) )
+        self.ovn_proc = mp.Process(target=Ovn_Producer,args = (data_q,del_q,toWorker_q,order_q,codes) )
         
         self.ovn_worker = Ovn_Worker(toWorker_q)
         self.ovn_worker.datasent.connect(self.update_table)

@@ -3,28 +3,36 @@ import multiprocessing as mp
 from dbmanager import * 
 import threading
 from PyQt5 import QtCore
+from kiwoom import Kiwoom_Wrapper
 from ovn_trade import *
+import setting 
+import time
+
+
 
 class Ovn_Producer():
     
-    BUY_START_TIME = '1500'
-    BUY_END_TIME = '1520'
-    SELL_START_TIME = '0850'
-    SELL_END_TIME = '1000'
+    BUY_START_TIME = '130000'
+    BUY_END_TIME = '152000'
+    SELL_START_TIME = '085000'
+    SELL_END_TIME = '100000'
     BUY_STOCK_COUNT = 10
     _buy_count = 0
     
     
-    def __init__(self,data_q : Queue,delete_q : Queue, to_worker_q ,codes : list):
+    def __init__(self,data_q ,delete_q , to_worker_q, ovn_order_q, codes ):
         
         super().__init__()
         
         self.data_q = data_q
         self.delete_q = delete_q
         self.to_worker_q = to_worker_q
+        self.ovn_order_q = ovn_order_q
         
         self.alive = True
         self.data_dict = dict.fromkeys(codes)
+        self.order_dict = {}
+        self.available_buy_count = self.BUY_STOCK_COUNT
         
         self.db = DatabaseMgr()
         t = threading.Thread(target = self.db.read_data_by_count)
@@ -34,7 +42,6 @@ class Ovn_Producer():
         t.join()
         print("Reading Db Done")
         self.db_df = self.db.get_data()
-        
         self.run()     
         
     def update_data_dict(self,data):
@@ -66,7 +73,6 @@ class Ovn_Producer():
         
         while self.alive:
             
-            print(mp.current_process() , 'run')
             if not self.data_q.empty() :
                 data = self.data_q.get()
                 self.update_data_dict(data)
@@ -76,6 +82,8 @@ class Ovn_Producer():
                 self.delete_data_dict(code)
             
             self.to_worker_q.put(self.data_dict)
+            time.sleep(0.01)
+            self.buy()
     
     def buy(self):
         
@@ -85,13 +93,20 @@ class Ovn_Producer():
         10종목 넘으면 3일 이격도 순으로 매수
         
         """
-        now = datetime.datetime.now().time().strftime("%H%M%S")
+        now = int( datetime.datetime.now().time().strftime("%H%M%S") )
         
-        if now >= int(self.BUY_START_TIME) and now <= int(self.BUY_END_TIME) and self._buy_count < self.BUY_STOCK_COUNT:
+        if  self.available_buy_count > 0 and None not in self.data_dict.values() and now >= int(self.BUY_START_TIME) and now <= int(self.BUY_END_TIME) and self._buy_count < self.BUY_STOCK_COUNT :
+            
+            buy_stocks = { k:v for k ,v in self.data_dict.items() if k not in self.order_dict.keys() or self.order_dict[k] == 0} 
+             
+            buy_list = sorted(buy_stocks.items(),key = lambda x : x[1][-1] , reverse =True)
+            buy_list = buy_list[:self.available_buy_count]
+            for order in buy_list:
+                self.sendOrder(order[0],order[1][2])
+                self.available_buy_count -= 1
+            print("주문 가능한 종목 수 : ",self.available_buy_count)
 
-            #3일 이격도 내림차순으로 정렬                
-            buy_list = sorted(self.data_dict.items(),key = lambda x : x[1][-1] , reverse =True)
-            buy_list = buy_list[:10][0]
-
-    def sendOrder(self,code):
-        pass 
+    def sendOrder(self,code,curPrice):
+        self.order_dict[code] = 1
+        order = (code,curPrice)
+        self.ovn_order_q.put(order)

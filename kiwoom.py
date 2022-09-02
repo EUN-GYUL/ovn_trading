@@ -8,6 +8,9 @@ from task import *
 import pandas as pd
 import realdata
 from singleton import Singleton
+from multiprocessing import Queue
+from order import OrderManager
+
 
 # TODO : 
 # 조건 검색식 편입 이탈 종목 관리
@@ -17,7 +20,7 @@ from singleton import Singleton
 
 
 class Kiwoom(KiwoomWrapper):
-    def __init__(self,ovn_q,ovn_del_q) -> None:
+    def __init__(self,ovn_q,ovn_del_q,ovn_order_q) -> None:
         
         super().__init__()
         self.eventloop = QEventLoop()
@@ -34,6 +37,10 @@ class Kiwoom(KiwoomWrapper):
         self.trmanager.poptr.connect(self.trRequest)
         self.trmanager.start()
         
+        self.ordermanager = OrderManager(ovn_order_q)
+        self.ordermanager.pop_order.connect(self.SendOrder)
+        self.trmanager.start()
+        
         self.df = None
         self.data_dict = {}
         self.datas_ohlc = []
@@ -46,6 +53,7 @@ class Kiwoom(KiwoomWrapper):
         self.datas = {}
         
         self.tr_data = None
+        
 
         
 
@@ -321,17 +329,12 @@ class Kiwoom(KiwoomWrapper):
     def get_ohlc(self):
         return self.datas_ohlc
     
-from multiprocessing import Queue
-from ovntable import *
-            
-class Kiwoom_Wrapper(metaclass = Singleton):
-    
-    
-    def __init__(self,ovn_q,ovn_del_q) -> None:
-        
 
+            
+class Kiwoom_Wrapper(Singleton):
         
-        self.kiwoom = Kiwoom(ovn_q,ovn_del_q)
+    def __init__(self,ovn_q,ovn_del_q,ovn_order_q):
+        self.kiwoom = Kiwoom(ovn_q,ovn_del_q,ovn_order_q)
         
         
         print('>> Login Start.')
@@ -341,13 +344,8 @@ class Kiwoom_Wrapper(metaclass = Singleton):
         self.isload_cond = False
         if self.load_condition_list() == 1 :
             self.isload_cond = True
-        
-        codes = self.get_cond_list('종가배팅_이격도3+주가중심선','000')
-        self.ovn_table = OvntableWidget(ovn_q,ovn_del_q,codes)
-        self.ovn_table.show()
-        
-        
-        
+    
+       
     def load_condition_list(self):
         
         ret = self.kiwoom.GetConditionLoad()
@@ -359,7 +357,8 @@ class Kiwoom_Wrapper(metaclass = Singleton):
         self.kiwoom.SendCondition(scr_no_dict['조건식조회'],cond_name ,cond_idx , 1)
         self.kiwoom.eventloop.exec()
         codes = self.kiwoom.conditions[cond_name].get_cond_list()
-        self.kiwoom.SetRealReg('0002',';'.join(codes),';'.join(real_data_fid),0)
+        if not codes == None:
+            self.kiwoom.SetRealReg(scr_no_dict['조건식실시간'],';'.join(codes),';'.join(real_data_fid),0)
         
         return codes 
     
@@ -373,6 +372,7 @@ class Kiwoom_Wrapper(metaclass = Singleton):
     def get_account_info(self,account):
         self.kiwoom.request_account_info(account)
         self.kiwoom.eventloop.exec()
+        
         return self.kiwoom.account_data[account]
         
         
