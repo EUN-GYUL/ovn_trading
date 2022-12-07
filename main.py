@@ -22,10 +22,9 @@ if __name__ == "__main__":
 
     kiwoom = Kiwoom_Wrapper(ovn_q,ovn_del_q,ovn_order_q)
     
-    
     codes = kiwoom.get_cond_list('종가배팅_이격도3+주가중심선','000')
     
-    
+    print(codes)
     ovn_table = OvntableWidget(ovn_q,ovn_del_q,ovn_order_q,codes)
     ovn_table.show()
 

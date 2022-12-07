@@ -9,10 +9,12 @@ class OrderManager(QThread):
     pop_order = pyqtSignal(dict)
     
     
-    def __init__(self,order_ovn_q) -> None:
+    def __init__(self,order_ovn_q,today_money) -> None:
         super().__init__()
         self.alive = True
         self.order_q = order_ovn_q
+        self.account_dict = {}
+        self.today_money = today_money
     
     def __del__(self):
         self.wait()
@@ -21,6 +23,19 @@ class OrderManager(QThread):
     def run(self)->None:
         while self.alive:
             if not self.order_q.empty() :
-                order = self.order_q.get()
+                code,price = self.order_q.get()
+                qty = self.calculate_quantity(price)
+                order = [code,price,qty,'1','']
                 self.pop_order.emit(order)
                 time.sleep(0.33)
+                
+    
+    def set_account_info(self,account_num,acc_data):
+        self.account_dict[account_num] = acc_data
+        
+    
+    
+    def calculate_quantity(self,price):
+        price = (1+ 0.015) * price 
+        qty = int( (self.today_money / 10) / price )
+        return qty

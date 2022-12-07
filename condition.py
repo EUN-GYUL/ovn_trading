@@ -10,7 +10,6 @@ class Condition:
         
     def get_cond_list(self):
         if len( self.codelist ) == 0 :
-            print(self.name, ">> 0개의 종목이 있음")
             return None
         return self.codelist
           

@@ -34,6 +34,7 @@ class DatabaseMgr():
                 ) a
                 where a.rownum between 2 and {count} 
             '''
+
         try:
             self.db_data = pd.read_sql_query(q, con=self.engine)
             self.db_data['stockCode'] = self.db_data['stockCode'].apply(lambda x : x[1:])

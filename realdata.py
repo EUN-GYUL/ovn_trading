@@ -41,7 +41,6 @@ class RealData:
             with open(self.DirFileName,'w') as f:
                 wr = csv.writer(f)
                 wr.writerows(tick_list)
-            
 
             print(f"File writting complete : {self.DirFileName} [{self.code}]")
             mem = dict(psutil.virtual_memory()._asdict())

@@ -42,6 +42,9 @@ class Ovn_Producer():
         t.join()
         print("Reading Db Done")
         self.db_df = self.db.get_data()
+        
+        print( self.get_rank() )
+        
         self.run()     
         
     def update_data_dict(self,data):
@@ -68,6 +71,30 @@ class Ovn_Producer():
         m = s / 3
         ppo = ( int(curPrice) / m )*100
         return ppo
+    
+    def get_rank(self,row_bd = 10 ,cat = 'amount',window = 3 ,reverse = True):
+        
+        """_summary_
+        
+        
+        
+        
+        
+        
+        
+        Args:
+            row_bd (int, optional): 가장 낮은 순위 . Defaults to 10.
+            cat (str, optional): 범주 amount(거래대금),marketCap(시가총액),ppo(이격도) . Defaults to 'amount'.
+            window : 기간
+            reverse : 내림차순 True 오름차순 False
+        return 
+            DataFrame
+        """
+        rename = cat+"_rank" 
+        new_col = self.db_df.sort_values(by='logDate',ascending=False).groupby('stockCode')[cat].rolling(window,min_periods = 1 ).mean().rename(rename).reset_index(drop = True, level = 0)
+        df = pd.concat([self.db_df,new_col],axis=1)
+        
+        return df.nlargest(row_bd,rename,keep='all')
     
     def run(self):
         

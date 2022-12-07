@@ -37,9 +37,7 @@ class Kiwoom(KiwoomWrapper):
         self.trmanager.poptr.connect(self.trRequest)
         self.trmanager.start()
         
-        self.ordermanager = OrderManager(ovn_order_q)
-        self.ordermanager.pop_order.connect(self.SendOrder)
-        self.trmanager.start()
+
         
         self.df = None
         self.data_dict = {}
@@ -52,12 +50,11 @@ class Kiwoom(KiwoomWrapper):
         self.codes = None
         self.datas = {}
         
-        self.tr_data = None
+        self.tr_data = []
         
-
         
-
     
+        
     def _OnEventConnect(self, nErrCode: int):
         '''
         상속을 이용
@@ -67,9 +64,11 @@ class Kiwoom(KiwoomWrapper):
             print(f'[OnEventConnect] Login OK')
             
             self.account_list = self.GetLoginInfo('ACCNO').split(";")
+            del self.account_list[-1]
+            print(self.account_list)
             self.account_data = dict.fromkeys(self.account_list)
-
-
+            
+                
             self.setCodeList('ALL')
             
             for code in self.codes:
@@ -139,8 +138,14 @@ class Kiwoom(KiwoomWrapper):
     def _OnReceiveRealData(self, sCode: str, sRealType: str, sRealData: str) -> None:
         
         if sRealType == '주식체결':
-            
             try :
+                                
+                realdata = []
+                for id in REAL_Fid_List.split(";"):
+                    realdata.append(self.GetCommRealData(sCode,int(id)))
+                self.datas[sCode].push(realdata)
+                
+                
                 if sCode in self.conditions['종가배팅_이격도3+주가중심선'].get_cond_list() :
                     data = []
                     
@@ -152,13 +157,10 @@ class Kiwoom(KiwoomWrapper):
                     
                     ovn_data = dict( zip(OVN_COL,data) )
                     self.ovn_q.put(ovn_data)
-                
-                realdata = []
-                for id in REAL_Fid_List.split(";"):
-                    realdata.append(self.GetCommRealData(sCode,int(id)))
-                self.datas[sCode].push(realdata)
+
             except :
-                print("_OnReceiveRealData 예외 발생")
+                pass
+                #print("_OnReceiveRealData 예외 발생")
 
             
             
@@ -172,12 +174,7 @@ class Kiwoom(KiwoomWrapper):
         task_id = sRqName
 
         try:
-            
-            if sTrCode == 'opt10081':
-                return self.callback[task_id](sScreenNo, sRqName, sTrCode, sRecordName, sPrevNext)
-
-            if sPrevNext == '0':
-                del self.callback[task_id]
+            self.callback[task_id](sScreenNo, sRqName, sTrCode, sRecordName, sPrevNext)
         except KeyError as e:
             print(e, sRqName)
         
@@ -236,6 +233,10 @@ class Kiwoom(KiwoomWrapper):
                 self.ovn_del_q.put(sCode)
             except TypeError as e:
                 print(e)
+                
+    def SendOrder_toKiwoom(self,order):
+        self.SendOrder(ORDER_TYPE[order[4]],scr_no_dict["주문"],self.account_list[1],
+                       order[3],order[0],order[2],order[1],order[4],'')
             
             
     def trRequest(self, task: Task) -> int:
@@ -248,7 +249,6 @@ class Kiwoom(KiwoomWrapper):
             self.SetInputValue(field, value)
 
         ret = self.CommRqData(*task.paramrq)
-        print(task.paramrq)
 
         self.taskdict[task.id] = task  # TR 연속처리시 재사용하기 위함
         
@@ -307,12 +307,19 @@ class Kiwoom(KiwoomWrapper):
     def request_account_info(self,acccount_number):
         task = Task()
         
-        task.trcode = "OPW00004"
+        task.trcode = "OPW00001"
         task.paramtr['계좌번호'] = acccount_number
+
         task.paramtr['상장폐지조회구분'] = "1"
         task.paramtr['비밀번호입력매체구분'] = 00
-    
-        task.paramrq = [task.id , task.trcode, '0',scr_no_dict["opt10001"] ]
+
+        if ( self.GetLoginInfo('GetServerGubun') == 1):
+            print("모의서버 계좌 조회")
+            task.paramrq = [ task.id , task.trcode,'0', MO_ACCOUNT_LIST[acccount_number[-4:]] ]
+        else:
+            print("실투자서버 계좌 조회")
+            task.paramrq = [ task.id , task.trcode,'0',ACCOUNT_LIST[acccount_number[-4:]] ]
+        
         self.callback[task.id] = self.reply_account_info 
         self.trmanager.push(task)    
     
@@ -321,6 +328,10 @@ class Kiwoom(KiwoomWrapper):
         data = []
         for col in ACCOUNT_COL:
             data.append(self.GetCommData(sTrCode,sRqName,0,col))
+        self.account_data[sScreenNo] = data
+        print(sScreenNo,data)
+        
+        self.eventloop.exit()
                 
 
     def get_cond_code_list(self,cond_name):
@@ -334,6 +345,7 @@ class Kiwoom(KiwoomWrapper):
 class Kiwoom_Wrapper(Singleton):
         
     def __init__(self,ovn_q,ovn_del_q,ovn_order_q):
+        
         self.kiwoom = Kiwoom(ovn_q,ovn_del_q,ovn_order_q)
         
         
@@ -344,7 +356,19 @@ class Kiwoom_Wrapper(Singleton):
         self.isload_cond = False
         if self.load_condition_list() == 1 :
             self.isload_cond = True
-    
+        
+        for account in self.kiwoom.account_list:
+            data = self.get_account_info(account)
+            #self.kiwoom.ordermanager.set_account_info(account,data)
+        money = list( self.kiwoom.account_data['5466451410'] )    
+        money = money[-1]
+        
+        
+        self.kiwoom.ordermanager = OrderManager(ovn_order_q,money)
+        self.kiwoom.ordermanager.pop_order.connect(self.kiwoom.SendOrder_toKiwoom)
+        self.kiwoom.ordermanager.start()
+        
+        
        
     def load_condition_list(self):
         
@@ -372,7 +396,6 @@ class Kiwoom_Wrapper(Singleton):
     def get_account_info(self,account):
         self.kiwoom.request_account_info(account)
         self.kiwoom.eventloop.exec()
-        
         return self.kiwoom.account_data[account]
         
         

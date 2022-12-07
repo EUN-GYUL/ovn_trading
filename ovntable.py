@@ -20,7 +20,6 @@ class OvntableWidget(QWidget):
         
         self.ovn_proc.start()
         self.ovn_worker.start()
-             
         
         
 
